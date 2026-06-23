@@ -6,7 +6,7 @@
 # ============================================
 
 # 1. 激活 conda（绝对路径，不依赖 PATH）
-source /Users/hanqingren/miniforge3/etc/profile.d/conda.sh
+source ~/miniforge3/etc/profile.d/conda.sh
 conda activate voxcpmane
 if [ $? -ne 0 ]; then
   echo "conda activate failed"
@@ -46,7 +46,7 @@ for i in {1..60}; do
 done
 
 # 5. 启动代理（前台阻塞，看到的实时日志就是它）
-PROXY_DIR="/Users/hanqingren/miniforge3/envs/voxcpmane/lib/python3.11/site-packages/voxcpmane/frontend"
+PROXY_DIR="~/miniforge3/envs/voxcpmane/lib/python3.11/site-packages/voxcpmane/frontend"
 cd "$PROXY_DIR"
 echo ""
 echo "[start] proxy (:8001) ..."
