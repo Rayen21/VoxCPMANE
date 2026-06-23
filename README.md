@@ -1,3 +1,11 @@
+# 修改原作者的前端页面并且加入ASR的音频自动转写功能
+
+<img width="1175" height="694" alt="image" src="https://github.com/user-attachments/assets/aad01b37-cdad-4e4c-944e-9a2b7723f471" />
+<img width="1180" height="762" alt="image" src="https://github.com/user-attachments/assets/052a8526-e7ac-4856-8c9a-958530732caa" />
+<img width="1186" height="773" alt="image" src="https://github.com/user-attachments/assets/1946f9ae-f053-42ed-b7c9-57c71b7c83a4" />
+
+# 以下为原作者内容：
+
 # VoxCPMANE2
 
 Install the VoxCPM2 package:
