@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoxCPM2 TTS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+/* ===== 白天主题（默认） ===== */
+body { background-color: #F5F5F7; color: #1D1D1F; transition: background-color 0.4s ease, color 0.4s ease; }
+.glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(20px); border: 1px solid white; box-shadow: 0 8px 32px rgba(0,0,0,0.05); transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease; }
+.btn-gradient { background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); transition: all 0.3s ease; }
+.btn-gradient:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+.btn-gradient:active { transform: translateY(0) scale(0.98); }
+.mode-btn.active { background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); color: white; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: #2563eb; border-radius: 50%; cursor: pointer; }
+input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+/* ===== 夜晚主题 ===== */
+body.dark { background-color: #1C1C1E; color: #E5E5EA; }
+body.dark .glass-card { background: rgba(44, 44, 46, 0.85); backdrop-filter: blur(24px); border: 1px solid rgba(84, 84, 88, 0.4); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
+body.dark .mode-btn:not(.active) { background: rgba(60, 60, 62, 0.6); color: #AEAEB2; }
+body.dark .mode-btn:not(.active):hover { background: rgba(84, 84, 88, 0.6); color: #E5E5EA; }
+body.dark select, body.dark textarea, body.dark input[type="number"], body.dark input[type="text"] { background: rgba(58, 58, 60, 0.8) !important; color: #E5E5EA !important; border: 1px solid rgba(84, 84, 88, 0.5) !important; }
+body.dark select:focus, body.dark textarea:focus, body.dark input:focus { border-color: #054280 !important; box-shadow: 0 0 0 1px #054280 !important; }
+body.dark ::placeholder { color: #636366 !important; }
+body.dark .text-slate-400 { color: #636366 !important; }
+body.dark .text-slate-600 { color: #8E8E93 !important; }
+body.dark .text-slate-800 { color: #E5E5EA !important; }
+body.dark .text-\[\#86868B\] { color: #636366 !important; }
+body.dark .text-\[\#D2D2D7\] { color: #48484A !important; }
+body.dark .border-\[\#D2D2D7\] { border-color: #48484A !important; }
+body.dark .border-\[\#F5F5F7\] { border-color: #2C2C2E !important; }
+body.dark .bg-\[\#F5F5F7\] { background-color: #2C2C2E !important; }
+body.dark .bg-\[\#FBFBFD\] { background-color: #1C1C1E !important; }
+body.dark .bg-\[\#E5E5EA\] { background-color: #48484A !important; }
+body.dark .bg-\[\#E5E5EA\]:hover { background-color: #636366 !important; }
+body.dark .bg-gray-100 { background-color: #2C2C2E !important; }
+body.dark .bg-gray-200 { background-color: #3A3A3C !important; }
+body.dark .text-slate-500 { color: #636366 !important; }
+body.dark .text-slate-500:hover { color: #0A84FF !important; }
+body.dark .text-blue-600 { color: #0A84FF !important; }
+body.dark .text-blue-500 { color: #0A84FF !important; }
+body.dark .text-blue-500:hover { color: #40A9FF !important; }
+body.dark audio::-webkit-media-controls-panel { background-color: #2C2C2E; }
+body.dark audio::-webkit-media-controls-play-button { filter: invert(1); }
+body.dark .log-panel { background: rgba(30, 30, 32, 0.95) !important; border: 1px solid rgba(84, 84, 88, 0.4) !important; }
+body.dark .log-entry { border-bottom: 1px solid rgba(84, 84, 88, 0.2) !important; }
+/* ===== 主题切换按钮 ===== */
+.theme-toggle { width: 24px; height: 24px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all 0.3s ease; background: rgba(255,255,255,0.7); color: #1D1D1F; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.theme-toggle:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+body.dark .theme-toggle { background: rgba(60,60,62,0.8); color: #FFD60A; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+body.dark .theme-toggle:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+/* ===== 过渡动画 ===== */
+*, *::before, *::after { transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease; }
+.no-transition { transition: none !important; }
+/* ===== 进度条 ===== */
+.progress-fill { background: linear-gradient(90deg, #0ea5e9, #2563eb); transition: width 0.3s ease; }
+/* ===== 日志面板 ===== */
+.log-panel { background: rgba(255, 255, 255, 0.95); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 1rem; max-height: 280px; overflow-y: auto; font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace; font-size: 11px; line-height: 1.6; }
+.log-panel::-webkit-scrollbar { width: 6px; }
+.log-panel::-webkit-scrollbar-track { background: transparent; }
+.log-panel::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+body.dark .log-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
+.log-entry { padding: 4px 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.03); display: flex; align-items: flex-start; gap: 8px; }
+.log-entry:last-child { border-bottom: none; }
+.log-time { color: #8E8E93; font-size: 10px; min-width: 55px; flex-shrink: 0; }
+.log-icon { flex-shrink: 0; width: 16px; text-align: center; }
+.log-msg { flex: 1; word-break: break-all; }
+.log-entry.info .log-icon { color: #0ea5e9; }
+.log-entry.success .log-icon { color: #34c759; }
+.log-entry.warning .log-icon { color: #ff9f0a; }
+.log-entry.error .log-icon { color: #ff3b30; }
+.log-entry.timing .log-icon { color: #af52de; }
+.log-entry.stage .log-icon { color: #5856d6; }
+/* ===== 生成状态显示 ===== */
+.generation-status { padding: 8px 16px; border-radius: 12px; background: rgba(0, 0, 0, 0.02); transition: all 0.3s ease; }
+body.dark .generation-status { background: rgba(255, 255, 255, 0.05); }
+.generation-status.processing { background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); }
+.generation-status.success { background: rgba(52, 199, 89, 0.1); border: 1px solid rgba(52, 199, 89, 0.3); }
+.generation-status.error { background: rgba(255, 59, 48, 0.1); border: 1px solid rgba(255, 59, 48, 0.3); }
+.generation-status.warning { background: rgba(255, 159, 10, 0.1); border: 1px solid rgba(255, 159, 10, 0.3); }
+/* ===== 参数提示框样式 ===== */
+.param-label { display: inline-flex; align-items: center; gap: 6px; cursor: help; position: relative; }
+.param-help-icon { color: #8E8E93; font-size: 12px; transition: color 0.2s ease; }
+.param-label:hover .param-help-icon { color: #0ea5e9; }
+.param-tooltip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: rgba(28, 28, 30, 0.98); color: #E5E5EA; padding: 10px 14px; border-radius: 8px; font-size: 11px; line-height: 1.6; opacity: 0; visibility: hidden; transition: all 0.25s ease; z-index: 1000; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); width: max-content; max-width: 320px; white-space: normal; text-align: left; text-transform: none; font-weight: 400; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; pointer-events: none; letter-spacing: 0.2px; }
+.param-tooltip::before { content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 10px; height: 10px; background: rgba(28, 28, 30, 0.98); }
+.param-label:hover .param-tooltip { opacity: 1; visibility: visible; bottom: calc(100% + 10px); }
+body.dark .param-tooltip { background: rgba(44, 44, 46, 0.98); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6); color: #E5E5EA; }
+body.dark .param-tooltip::before { background: rgba(44, 44, 46, 0.98); }
+/* ===== 参考音频播放器样式 ===== */
+.ref-player-wrap { background: rgba(0,0,0,0.03); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
+body.dark .ref-player-wrap { background: rgba(255,255,255,0.06); }
+.ref-player-wrap audio { flex: 1; height: 36px; }
+.ref-player-wrap .ref-remove-btn { background: none; border: none; color: #8E8E93; cursor: pointer; font-size: 14px; padding: 4px; transition: color 0.2s; }
+.ref-player-wrap .ref-remove-btn:hover { color: #ff3b30; }
+/* ===== 自动转录提示条 ===== */
+.auto-transcribe-hint { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 10px; font-size: 11px; font-weight: 500; transition: all 0.3s ease; }
+.auto-transcribe-hint.idle { background: rgba(0,0,0,0.03); color: #8E8E93; }
+body.dark .auto-transcribe-hint.idle { background: rgba(255,255,255,0.05); color: #636366; }
+.auto-transcribe-hint.loading { background: rgba(14, 165, 233, 0.1); color: #0ea5e9; border: 1px solid rgba(14,165,233,0.2); }
+.auto-transcribe-hint.done { background: rgba(52, 199, 89, 0.1); color: #34c759; border: 1px solid rgba(52,199,89,0.2); }
+.auto-transcribe-hint.error { background: rgba(255, 59, 48, 0.1); color: #ff3b30; border: 1px solid rgba(255,59,48,0.2); }
+</style>
+</head>
+<body class="min-h-screen p-4 md:p-8 font-sans">
+<div class="max-w-6xl mx-auto space-y-6">
+<!-- 顶部标题栏 -->
+<div class="flex items-center justify-between px-4">
+<div>
+<h1 class="text-2xl font-bold tracking-tight">VoxCPM2 <span class="text-slate-400 font-light">TTS</span></h1>
+<p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-1">
+<span class="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse mr-1"></span>
+ANE Engine Active
+</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切换日夜主题"><i class="fa-solid fa-moon" id="themeIcon"></i></button>
+<div class="text-right hidden md:block"><span class="text-xs text-slate-400 font-medium">Local Inference Mode</span></div>
+</div>
+</div>
+<!-- 模式选择 -->
+<div class="glass-card p-4 rounded-2xl">
+<div class="flex space-x-2 justify-center">
+<button onclick="selectMode('voice-design')" id="mode-voice-design" class="mode-btn active px-6 py-2 rounded-xl text-sm font-medium transition-all"><i class="fa-solid fa-user mr-2"></i>声音设计</button>
+<button onclick="selectMode('controllable-cloning')" id="mode-controllable-cloning" class="mode-btn px-6 py-2 rounded-xl text-sm font-medium transition-all"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>可控克隆</button>
+<button onclick="selectMode('ultimate-cloning')" id="mode-ultimate-cloning" class="mode-btn px-6 py-2 rounded-xl text-sm font-medium transition-all"><i class="fa-solid fa-microphone-lines mr-2"></i>极致克隆</button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- 左侧：控制面板 -->
+<div class="glass-card p-8 rounded-[2rem] space-y-6">
+<h2 class="text-sm font-bold text-slate-800 flex items-center"><i class="fa-solid fa-sliders mr-2 text-blue-500"></i> 合成参数配置</h2>
+<!-- ========== 参考音频（克隆模式） ========== -->
+<div id="refAudioSection" class="tab-content space-y-4">
+<div>
+<label class="block text-[11px] font-black text-[#86868B] uppercase ml-1 mb-2">参考音频 <span class="text-red-400">*</span></label>
+<label id="uploadBtnWrap" class="cursor-pointer block">
+<input type="file" id="audioFileInput" accept="audio/*" class="hidden" onchange="handleAudioUpload(event)">
+<div class="bg-[#F5F5F7] hover:bg-[#E5E5EA] border-2 border-dashed border-[#D2D2D7] hover:border-blue-400 rounded-xl p-4 text-sm text-center transition-all flex flex-col items-center justify-center gap-1">
+<i class="fa-solid fa-folder-open text-lg text-blue-500"></i>
+<span id="fileNameDisplay" class="text-[#86868B]">点击选择本地音频文件</span>
+</div>
+</label>
+<div id="refPlayerWrap" class="ref-player-wrap mt-3" style="display:none;">
+<i class="fa-solid fa-file-audio text-blue-500"></i>
+<span id="refAudioFileName" class="flex-1 text-xs text-slate-700 font-medium truncate" title=""></span>
+<audio id="refAudioPlayer" controls></audio>
+<button class="ref-remove-btn" onclick="removeRefAudio()" title="移除音频"><i class="fa-solid fa-xmark"></i></button>
+</div>
+<input type="text" id="audioPathInput" class="hidden">
+</div>
+</div>
+<!-- ========== 情感描述（声音设计 / 可控克隆） ========== -->
+<div id="emotionDescSection" class="tab-content active space-y-4">
+<div>
+<label class="block text-[11px] font-black text-[#86868B] uppercase ml-1 mb-2" id="emotionLabel">情感描述 <span class="text-red-400">*</span></label>
+<textarea id="voiceDesc" class="w-full bg-[#F5F5F7] border-none rounded-xl p-4 text-sm focus:ring-1 focus:ring-blue-500" rows="3" placeholder="描述目标音色特征（性别、年龄、语气、情绪、语速等）例：中老年女性，声音低沉阴冷，语速缓慢而有力..."></textarea>
+</div>
+</div>
+<!-- ========== 转录文本（极致克隆） ========== -->
+<div id="transcriptSection" class="tab-content space-y-4">
+<div>
+<label class="block text-[11px] font-black text-[#86868B] uppercase ml-1 mb-2">参考音频转录文本 <span class="text-red-400">*</span></label>
+<textarea id="transcriptText" class="w-full bg-[#F5F5F7] border-none rounded-xl p-4 text-sm focus:ring-1 focus:ring-blue-500" rows="3" placeholder="上传参考音频后自动填入，也可手动编辑...(首次预加载ASR模型约30秒请耐心等待)"></textarea>
+</div>
+</div>
+<!-- 随机种子 -->
+<div>
+<label class="block text-[11px] font-black text-[#86868B] uppercase ml-1 mb-2">随机种子</label>
+<input type="text" id="seed" value="" placeholder="留空自动生成或输入自定义种子" class="w-full bg-[#F5F5F7] border-none rounded-xl p-3 text-sm text-center">
+<p class="text-[10px] text-slate-400 mt-1">可手动输入种子以复用之前的音色</p>
+</div>
+<!-- 高级参数折叠面板 -->
+<div class="border-t border-[#F5F5F7] pt-4">
+<button onclick="toggleAdvanced()" class="w-full flex items-center justify-between text-xs font-medium text-slate-600 hover:text-blue-600 transition">
+<span>高级生成参数</span>
+<i class="fa-solid fa-chevron-down text-slate-400 transition-transform" id="advancedIcon"></i>
+</button>
+<div id="advancedContent" class="hidden mt-4 space-y-4">
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="block text-[10px] font-black text-[#86868B] uppercase ml-1 mb-1.5">
+<span class="param-label">Max Length<i class="fa-solid fa-circle-question param-help-icon"></i>
+<span class="param-tooltip">控制生成音频的最大长度（以模型 token 为单位）。<br>• 默认 2048：约支持 5-10 秒音频<br>• 增大该值：可生成更长音频（如 4096）<br>• 过小会导致音频被截断</span>
+</span>
+</label>
+<input type="number" id="maxLength" value="2048" min="1" max="8192" class="w-full bg-[#F5F5F7] border-none rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-blue-500 text-center">
+</div>
+<div>
+<label class="block text-[10px] font-black text-[#86868B] uppercase ml-1 mb-1.5">
+<span class="param-label">CFG Value<i class="fa-solid fa-circle-question param-help-icon"></i>
+<span class="param-tooltip">引导强度：控制模型遵循条件（情感/音色）的严格程度。<br>• 值越高（如 3.0）：更严格遵循条件，但可能缺乏变化<br>• 值越低（如 1.0）：更多自由发挥，但可能偏离条件<br>• 推荐范围：1.0-3.0，默认 2.0 是平衡点</span>
+</span>
+</label>
+<input type="number" id="cfgValue" value="2.0" min="0" max="10" step="0.1" class="w-full bg-[#F5F5F7] border-none rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-blue-500 text-center">
+</div>
+<div>
+<label class="block text-[10px] font-black text-[#86868B] uppercase ml-1 mb-1.5">
+<span class="param-label">Inference Steps<i class="fa-solid fa-circle-question param-help-icon"></i>
+<span class="param-tooltip">扩散步数：控制生成质量与速度的平衡。<br>• 更多步数（20-30）：质量更好，但速度更慢<br>• 更少步数（5-10）：速度更快，质量略有下降<br>• 推荐范围：4-30，默认 10 是平衡点</span>
+</span>
+</label>
+<input type="number" id="inferenceSteps" value="10" min="1" max="100" class="w-full bg-[#F5F5F7] border-none rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-blue-500 text-center">
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 右侧：文本输入与输出 -->
+<div class="glass-card p-8 rounded-[2rem] flex flex-col justify-between">
+<div class="space-y-6">
+<h2 class="text-sm font-bold text-slate-800 flex items-center"><i class="fa-solid fa-font mr-2 text-blue-500"></i> 合成内容结果</h2>
+<div>
+<label class="block text-[11px] font-black text-[#86868B] uppercase ml-1 mb-2">待生成的文案内容</label>
+<textarea id="promptText" class="w-full bg-[#F5F5F7] border-none rounded-2xl p-4 text-sm focus:ring-1 focus:ring-blue-500" rows="4" placeholder="在此输入您想要合成的文本内容..."></textarea>
+</div>
+<!-- 进度条 -->
+<div class="space-y-1.5">
+<div class="flex justify-between text-[10px] text-slate-400">
+<span id="progressLabel">准备就绪</span>
+<span id="progressPercent">0%</span>
+</div>
+<div class="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+<div id="progressBar" class="progress-fill h-full rounded-full" style="width: 0%"></div>
+</div>
+</div>
+<!-- 生成状态显示区域 -->
+<div id="generationStatus" class="generation-status">
+<div class="flex items-center justify-center gap-2 text-[11px] text-slate-600">
+<i class="fa-solid fa-circle-info text-slate-400"></i>
+<span id="statusText">等待生成任务...</span>
+</div>
+</div>
+<!-- 控制按钮 -->
+<div class="grid grid-cols-4 gap-2">
+<button id="playBtn" class="btn-gradient text-white font-bold py-2.5 rounded-xl shadow-lg flex items-center justify-center text-[11px]"><i class="fa-solid fa-bolt mr-1"></i><span>实时播放</span></button>
+<button id="createBtn" class="px-3 py-2.5 bg-[#E5E5EA] hover:bg-[#D2D2D7] rounded-xl text-[11px] font-medium transition-all flex items-center justify-center"><i class="fa-solid fa-download mr-1"></i><span>成品创建</span></button>
+<button id="pauseBtn" class="px-3 py-2.5 bg-[#E5E5EA] hover:bg-[#D2D2D7] rounded-xl text-[11px] font-medium transition-all flex items-center justify-center"><i class="fa-solid fa-circle-play mr-1"></i><span>播放/暂停</span></button>
+<button id="stopBtn" disabled class="px-3 py-2.5 bg-[#E5E5EA] opacity-50 cursor-not-allowed rounded-xl text-[11px] font-medium transition-all flex items-center justify-center"><i class="fa-solid fa-circle-stop mr-1"></i><span>停止创建</span></button>
+</div>
+<!-- 生成日志面板 -->
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<button onclick="toggleLogPanel()" class="flex items-center text-[10px] font-black text-[#86868B] uppercase hover:text-blue-500 transition">
+<i class="fa-solid fa-terminal mr-1.5"></i> 生成日志
+<i class="fa-solid fa-chevron-down ml-2 text-slate-400 transition-transform" id="logIcon"></i>
+</button>
+<button onclick="clearLog()" class="text-[9px] text-slate-400 hover:text-red-400 transition"><i class="fa-solid fa-trash-can mr-1"></i>清空</button>
+</div>
+<div id="logPanel" class="log-panel hidden">
+<div id="logContent" class="py-2">
+<div class="log-entry info"><span class="log-time">--:--:--</span><span class="log-icon"><i class="fa-solid fa-circle-info"></i></span><span class="log-msg">等待生成任务...</span></div>
+</div>
+</div>
+</div>
+</div>
+<!-- 音频播放器 -->
+<div id="audioPlayerContainer" class="hidden mt-6 pt-6 border-t border-[#F5F5F7]">
+<div class="bg-gray-100 rounded-xl p-3">
+<audio id="mainAudioPlayer" controls class="w-full h-10 [&::-webkit-media-controls-panel]:bg-gray-200">您的浏览器不支持音频播放</audio>
+</div>
+</div>
+</div>
+</div>
+<!-- 底部信息栏 -->
+<div class="text-center mt-2">
+<span class="text-[10px] text-slate-400">
+ANE Accelerated | Auto Memory Cleanup | Rayen21 |
+<a href="https://github.com/Rayen21/VoxCPMANE/tree/voxcpmane2/src/voxcpmane/frontend" target="_blank" class="text-blue-500 hover:underline">GitHub</a>
+</span>
+</div>
+</div>
+<script>
+// API 配置
+const API_BASE_URL = 'http://localhost:8001';
+
+// 全局状态
+let currentMode = 'voice-design';
+let abortController = null;
+let audioContext = null;
+let nextStartTime = 0;
+let audioChunks = [];
+let streamReader = null;
+let currentAudioUrl = null;
+let lastStreamSeed = null;
+let generationStartTime = null;
+let logPanelVisible = false;
+let isStreaming = false;
+let isStreamPaused = false;
+let resumeStreamResolve = null;
+
+// ✅ 独立状态管理器 (彻底解决状态污染)
+const modeStates = {
+    'voice-design': { emotionDesc: '', refAudioPath: '', refAudioPreviewUrl: null, refAudioFileName: '点击选择本地音频文件', transcriptText: '' },
+    'controllable-cloning': { emotionDesc: '', refAudioPath: '', refAudioPreviewUrl: null, refAudioFileName: '点击选择本地音频文件', transcriptText: '' },
+    'ultimate-cloning': { emotionDesc: '', refAudioPath: '', refAudioPreviewUrl: null, refAudioFileName: '点击选择本地音频文件', transcriptText: '' }
+};
+
+const mainPlayer = document.getElementById('mainAudioPlayer');
+const playerContainer = document.getElementById('audioPlayerContainer');
+const pauseBtn = document.getElementById('pauseBtn');
+const statusElement = document.getElementById('generationStatus');
+const statusText = document.getElementById('statusText');
+
+// ===== 日志系统 =====
+function getTimestamp() { return new Date().toTimeString().split(' ')[0]; }
+function addLog(msg, type = 'info', icon = null) {
+    const logContent = document.getElementById('logContent');
+    const icons = { 'info': 'fa-solid fa-circle-info', 'success': 'fa-solid fa-circle-check', 'warning': 'fa-solid fa-triangle-exclamation', 'error': 'fa-solid fa-circle-xmark', 'timing': 'fa-solid fa-stopwatch', 'stage': 'fa-solid fa-layer-group', 'stream': 'fa-solid fa-wave-square', 'seed': 'fa-solid fa-dice', 'model': 'fa-solid fa-microchip' };
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    entry.innerHTML = `<span class="log-time">${getTimestamp()}</span><span class="log-icon"><i class="${icon || icons[type] || icons.info}"></i></span><span class="log-msg">${msg}</span>`;
+    logContent.appendChild(entry);
+    document.getElementById('logPanel').scrollTop = document.getElementById('logPanel').scrollHeight;
+}
+function clearLog() { document.getElementById('logContent').innerHTML = `<div class="log-entry info"><span class="log-time">${getTimestamp()}</span><span class="log-icon"><i class="fa-solid fa-circle-info"></i></span><span class="log-msg">日志已清空</span></div>`; }
+function toggleLogPanel() {
+    logPanelVisible = !logPanelVisible;
+    document.getElementById('logPanel').classList.toggle('hidden');
+    document.getElementById('logIcon').style.transform = logPanelVisible ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+// ===== 生成状态显示 =====
+function updateGenerationStatus(message, type = 'idle', details = null) {
+    statusElement.className = 'generation-status';
+    if (type !== 'idle') statusElement.classList.add(type);
+    let html = `<div class="flex items-center justify-center gap-2 text-[11px]">`;
+    html += `<span class="${type === 'error' ? 'text-red-600' : type === 'success' ? 'text-green-600' : type === 'processing' ? 'text-blue-600' : type === 'warning' ? 'text-orange-600' : 'text-slate-600'}">${message}</span>`;
+    if (details) html += `<span class="text-slate-400 mx-1">|</span><span class="text-slate-500">${details}</span>`;
+    html += `</div>`;
+    statusText.innerHTML = html;
+}
+
+// ===== 错误诊断 =====
+function diagnoseError(status, st, responseText) {
+    let d = '';
+    switch(status) {
+        case 400: 
+            try { const errJson = JSON.parse(responseText); d = errJson.detail || responseText; } catch(e) { d = responseText || '请求参数错误'; }
+            break;
+        case 429: d = '服务器繁忙，请稍后再试'; break;
+        case 500: d = responseText.includes('no chunks produced') ? '生成失败：未产生音频块' : '服务器内部错误'; break;
+        case 503: d = '服务不可用，模型可能正在加载'; break;
+        case 0: d = '无法连接到后端服务 (localhost:8001)'; break;
+        default: d = `未知错误 (HTTP ${status})`;
+    }
+    return d;
+}
+
+// ===== 主题切换 =====
+function toggleTheme() {
+    document.body.classList.toggle('dark');
+    const isDark = document.body.classList.contains('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+}
+(function() { if (localStorage.getItem('theme') === 'dark') { document.body.classList.add('dark'); document.getElementById('themeIcon').className = 'fa-solid fa-sun'; } })();
+
+// ===== ✅ 模式切换（带状态保存与恢复，UI 物理隔离） =====
+function selectMode(mode) {
+    // 1. 保存当前 DOM 状态到 modeStates
+    modeStates[currentMode].emotionDesc = document.getElementById('voiceDesc').value;
+    modeStates[currentMode].transcriptText = document.getElementById('transcriptText').value;
+
+    // ✅ 同步高亮当前模式按钮
+    document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.getElementById(`mode-${mode}`);
+    if (activeBtn) activeBtn.classList.add('active');
+    
+    // 2. 切换 UI 可见性 (核心修复：根据模式严格显隐)
+    const refAudio = document.getElementById('refAudioSection');
+    const emotionDesc = document.getElementById('emotionDescSection');
+    const transcript = document.getElementById('transcriptSection');
+    const emotionLabel = document.getElementById('emotionLabel');
+    
+    [refAudio, emotionDesc, transcript].forEach(el => { 
+        if(el) { el.setAttribute('style', 'display: none !important;'); el.classList.remove('active'); }
+    });
+    
+    if (mode === 'voice-design') {
+        emotionDesc.setAttribute('style', 'display: block !important;'); emotionDesc.classList.add('active');
+        emotionLabel.innerHTML = '情感描述 (Control Instruction) <span class="text-red-400">*</span>';
+    } else if (mode === 'controllable-cloning') {
+        // ✅ 可控克隆：需要参考音频 + 情感描述，不需要转录文本
+        refAudio.setAttribute('style', 'display: block !important;'); refAudio.classList.add('active');
+        emotionDesc.setAttribute('style', 'display: block !important;'); emotionDesc.classList.add('active');
+        emotionLabel.innerHTML = '情感描述 (Control Instruction)';
+    } else if (mode === 'ultimate-cloning') {
+        // ✅ 极致克隆：需要参考音频 + 转录文本，不需要情感描述
+        refAudio.setAttribute('style', 'display: block !important;'); refAudio.classList.add('active');
+        transcript.setAttribute('style', 'display: block !important;'); transcript.classList.add('active');
+    }
+    
+    // 3. 恢复目标模式的状态到 DOM
+    currentMode = mode;
+    document.getElementById('voiceDesc').value = modeStates[mode].emotionDesc;
+    document.getElementById('transcriptText').value = modeStates[mode].transcriptText || '';
+    document.getElementById('audioPathInput').value = modeStates[mode].refAudioPath;
+    document.getElementById('fileNameDisplay').textContent = modeStates[mode].refAudioFileName;
+    
+    if (modeStates[mode].refAudioPreviewUrl) {
+        document.getElementById('refAudioPlayer').src = modeStates[mode].refAudioPreviewUrl;
+        document.getElementById('refPlayerWrap').style.display = 'flex';
+        document.getElementById('uploadBtnWrap').style.display = 'none';
+        const restoreName = modeStates[mode].refAudioFileName && modeStates[mode].refAudioFileName !== '点击选择本地音频文件'
+            ? modeStates[mode].refAudioFileName : '';
+        const restoreNameEl = document.getElementById('refAudioFileName');
+        restoreNameEl.textContent = restoreName;
+        restoreNameEl.title = restoreName;
+    } else {
+        document.getElementById('refAudioPlayer').src = '';
+        document.getElementById('refPlayerWrap').style.display = 'none';
+        document.getElementById('uploadBtnWrap').style.display = 'block';
+        const clearNameEl = document.getElementById('refAudioFileName');
+        clearNameEl.textContent = '';
+        clearNameEl.title = '';
+    }
+    
+    addLog(`🎤 切换模式: ${mode}`, 'stage');
+}
+
+// ===== ✅ 参考音频上传（仅在极致克隆时自动转录） =====
+async function handleAudioUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (modeStates[currentMode].refAudioPreviewUrl) URL.revokeObjectURL(modeStates[currentMode].refAudioPreviewUrl);
+    
+    const previewUrl = URL.createObjectURL(file);
+    modeStates[currentMode].refAudioPreviewUrl = previewUrl;
+    modeStates[currentMode].refAudioFileName = file.name;
+    
+    document.getElementById('fileNameDisplay').textContent = file.name;
+    const refNameEl = document.getElementById('refAudioFileName');
+    refNameEl.textContent = file.name;
+    refNameEl.title = file.name;
+    document.getElementById('refAudioPlayer').src = previewUrl;
+    document.getElementById('refPlayerWrap').style.display = 'flex';
+    document.getElementById('uploadBtnWrap').style.display = 'none';
+    
+    addLog(`📁 已选择音频: ${file.name} (${(file.size/1024).toFixed(1)} KB)`, 'info');
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    let uploadOk = false;
+    try {
+        const res = await fetch(`${API_BASE_URL}/v1/audio/upload`, { method: 'POST', body: formData });
+        const errText = await res.text();
+        let data = {};
+        try { data = errText ? JSON.parse(errText) : {}; } catch (_) { data = {}; }
+        if (!res.ok) {
+            const msg = (data && (data.detail || data.message)) || errText || `HTTP ${res.status}`;
+            throw new Error(msg);
+        }
+        if (data.status === 'success') {
+            modeStates[currentMode].refAudioPath = data.file_path;
+            document.getElementById('audioPathInput').value = data.file_path;
+            addLog(`✅ 音频已上传，路径: ${data.file_path}`, 'success');
+            uploadOk = true;
+        } else throw new Error(data.detail || '上传失败');
+    } catch (err) {
+        addLog(`❌ 音频上传失败: ${err.message}`, 'error');
+        // ✅ 失败时复位 UI，让用户重选
+        document.getElementById('refAudioPlayer').src = '';
+        document.getElementById('refPlayerWrap').style.display = 'none';
+        document.getElementById('uploadBtnWrap').style.display = 'block';
+        document.getElementById('fileNameDisplay').textContent = '点击选择本地音频文件';
+        const failNameEl = document.getElementById('refAudioFileName');
+        failNameEl.textContent = '';
+        failNameEl.title = '';
+        document.getElementById('audioPathInput').value = '';
+        modeStates[currentMode].refAudioPath = '';
+        modeStates[currentMode].refAudioPreviewUrl = null;
+        modeStates[currentMode].refAudioFileName = '点击选择本地音频文件';
+        document.getElementById('audioFileInput').value = '';
+        return;
+    }
+
+    // ✅ 成功：清空 file input，确保同名文件再次选择时能触发 onchange
+    document.getElementById('audioFileInput').value = '';
+    if (uploadOk) {
+        // 成功才进入转录路径
+        if (currentMode === 'ultimate-cloning') {
+            try { await autoTranscribeFile(file); }
+            catch (err) { addLog(`❌ 自动转录异常: ${err.message}`, 'error'); }
+        }
+    }
+}
+
+// ✅ 移除参考音频
+function removeRefAudio() {
+    if (modeStates[currentMode].refAudioPreviewUrl) URL.revokeObjectURL(modeStates[currentMode].refAudioPreviewUrl);
+    modeStates[currentMode].refAudioPreviewUrl = null;
+    modeStates[currentMode].refAudioPath = '';
+    modeStates[currentMode].refAudioFileName = '点击选择本地音频文件';
+
+    document.getElementById('refAudioPlayer').src = '';
+    document.getElementById('refPlayerWrap').style.display = 'none';
+    document.getElementById('uploadBtnWrap').style.display = 'block';
+    document.getElementById('fileNameDisplay').textContent = '点击选择本地音频文件';
+    const removedNameEl = document.getElementById('refAudioFileName');
+    removedNameEl.textContent = '';
+    removedNameEl.title = '';
+    document.getElementById('audioPathInput').value = '';
+    document.getElementById('audioFileInput').value = '';
+
+    setTranscribeHint('idle', '上传参考音频后将自动转录文本');
+    document.getElementById('transcriptText').value = '';
+    modeStates[currentMode].transcriptText = '';
+    addLog('🗑️ 已移除参考音频', 'info');
+}
+
+// ===== ✅ 自动转录核心函数 =====
+function setTranscribeHint(state, text) {
+    // ✅ UI 已移除，函数保留为 no-op 避免调用点崩溃
+    const hint = document.getElementById('autoTranscribeHint');
+    if (!hint) return;
+    const txt = document.getElementById('autoTranscribeText');
+    hint.className = `auto-transcribe-hint ${state} mb-3`;
+    const iconMap = { idle: 'fa-circle-info', loading: 'fa-spinner fa-spin', done: 'fa-circle-check', error: 'fa-circle-xmark' };
+    hint.querySelector('i').className = `fa-solid ${iconMap[state] || iconMap.idle}`;
+    txt.textContent = text;
+}
+async function autoTranscribeFile(file) {
+    setTranscribeHint('loading', '正在识别音频文本，请稍候...');
+    addLog(`🎤 自动转录开始: ${file.name}`, 'info');
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+        const res = await fetch(`${API_BASE_URL}/v1/audio/transcribe`, { method: 'POST', body: formData });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.text) {
+            document.getElementById('transcriptText').value = data.text;
+            modeStates[currentMode].transcriptText = data.text;
+            setTranscribeHint('done', '转录完成，您可以手动微调文本');
+            addLog(`✅ 自动转录完成: ${data.text}`, 'success');
+        } else throw new Error('未识别到文本');
+    } catch (err) {
+        setTranscribeHint('error', `转录失败: ${err.message}`);
+        addLog(`❌ 自动转录失败: ${err.message}`, 'error');
+    }
+}
+
+// ===== 验证输入 =====
+function validateInput() {
+    const inputText = document.getElementById('promptText').value.trim();
+    if (!inputText) return { valid: false, message: '请输入待生成的文案内容' };
+    if (currentMode === 'voice-design') { if (!document.getElementById('voiceDesc').value.trim()) return { valid: false, message: '请输入情感描述' }; }
+    else if (currentMode === 'controllable-cloning') {
+        if (!document.getElementById('audioPathInput').value.trim()) return { valid: false, message: '请选择参考音频' };
+        if (!document.getElementById('voiceDesc').value.trim()) return { valid: false, message: '请输入情感描述' };
+    }
+    else if (currentMode === 'ultimate-cloning') {
+        if (!document.getElementById('audioPathInput').value.trim()) return { valid: false, message: '请选择参考音频' };
+        if (!document.getElementById('transcriptText').value.trim()) return { valid: false, message: '转录文本为空，请等待自动转录完成或手动输入' };
+    }
+    return { valid: true, message: '' };
+}
+
+// ===== ✅ 构建请求体（完美复刻官方前端逻辑） =====
+function buildRequestBody(seed) {
+    const inputText = document.getElementById('promptText').value.trim();
+    const body = { 
+        model: 'voxcpm2', 
+        input: inputText, 
+        response_format: 'wav', 
+        seed: seed, 
+        max_length: parseInt(document.getElementById('maxLength').value) || 2048, 
+        cfg_value: parseFloat(document.getElementById('cfgValue').value) || 2.0, 
+        inference_timesteps: parseInt(document.getElementById('inferenceSteps').value) || 10 
+    };
+
+    if (currentMode === 'voice-design') {
+        // 声音设计：使用 [] 包裹控制指令
+        const desc = document.getElementById('voiceDesc').value.trim();
+        const cleanDesc = desc.replace(/[\[\]()（）]/g, '').trim();
+        body.input = cleanDesc ? `[${cleanDesc}] ${inputText}` : inputText;
+    }
+    else if (currentMode === 'controllable-cloning') {
+        // ✅ 可控克隆：使用 reference_wav_path（音色参考，不进入续写模式）
+        // 不能用 prompt_wav_path，那是续写字段，后端会强制要求 prompt_text 并返回 400
+        body.reference_wav_path = document.getElementById('audioPathInput').value.trim();
+
+        const desc = document.getElementById('voiceDesc').value.trim();
+        const cleanDesc = desc.replace(/[\[\]()（）]/g, '').trim();
+        body.input = cleanDesc ? `[${cleanDesc}] ${inputText}` : inputText;
+    }
+    else if (currentMode === 'ultimate-cloning') {
+        // 极致克隆：必须传 prompt_text，不需要控制指令
+        body.prompt_wav_path = document.getElementById('audioPathInput').value.trim();
+        body.prompt_text = document.getElementById('transcriptText').value.trim();
+        body.input = inputText; 
+    }
+    return body;
+}
+
+// ===== 生成音频（成品创建） =====
+async function generateAudio() {
+    const btn = document.getElementById('createBtn');
+    const validation = validateInput();
+    if (!validation.valid) { updateGenerationStatus(`❌ ${validation.message}`, 'error'); addLog(`❌ 验证失败: ${validation.message}`, 'error'); return; }
+
+    if (mainPlayer && !mainPlayer.paused) { mainPlayer.pause(); addLog('⏹ 暂停当前音频播放，开始生成新成品', 'warning'); }
+    if (isStreaming && abortController) abortController.abort();
+
+    updateGenerationStatus('📋 正在提交任务...', 'processing');
+    const seedInput = document.getElementById('seed');
+    let seed = parseInt(seedInput.value.trim());
+    if (!seed || isNaN(seed)) { seed = Math.floor(Math.random() * (2**32)); seedInput.value = seed; addLog(`🎲 生成随机种子: ${seed}`, 'seed'); }
+    else addLog(`🎲 使用种子: ${seed}`, 'seed');
+    
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> <span>生成中...</span>';
+    const stopBtn = document.getElementById('stopBtn'); stopBtn.disabled = false; stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    updateProgress(0); addLog(`🚀 开始成品创建任务 | Seed: ${seed}`, 'info');
+    
+    try {
+        const body = buildRequestBody(seed); abortController = new AbortController();
+        generationStartTime = performance.now();
+        const res = await fetch(`${API_BASE_URL}/v1/audio/speech`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: abortController.signal });
+        if (!res.ok) { 
+            const errorText = await res.text(); 
+            addLog(`❌ 后端详细错误: ${errorText}`, 'error');
+            updateGenerationStatus(`❌ ${diagnoseError(res.status, '', errorText)}`, 'error'); 
+            updateProgress(0); 
+            return; 
+        }
+        const reader = res.body.getReader(); const chunks = []; let receivedLength = 0; let firstByteReceived = false;
+        while (true) {
+            const { done, value } = await reader.read(); if (done) break;
+            if (!firstByteReceived) { firstByteReceived = true; const ttfb = ((performance.now() - generationStartTime) / 1000).toFixed(3); updateGenerationStatus('⚡ 首字节到达', 'processing', `TTFB: ${ttfb}s`); }
+            chunks.push(value); receivedLength += value.length;
+            updateGenerationStatus('🔄 接收数据中...', 'processing', `${(receivedLength/1024).toFixed(1)} KB`);
+            updateProgress(Math.min(95, receivedLength / 1024));
+        }
+        const blob = new Blob(chunks);
+        if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+        currentAudioUrl = URL.createObjectURL(blob);
+        const arrayBuffer = await blob.arrayBuffer(); const dataView = new DataView(arrayBuffer);
+        let sampleRate = 24000, numChannels = 1, bitsPerSample = 16, pcmDataSize = blob.size - 44;
+        if (String.fromCharCode(dataView.getUint8(0), dataView.getUint8(1), dataView.getUint8(2), dataView.getUint8(3)) === 'RIFF') {
+            numChannels = dataView.getUint16(22, true); sampleRate = dataView.getUint32(24, true); bitsPerSample = dataView.getUint16(34, true);
+        }
+        const audioDuration = (pcmDataSize / (sampleRate * numChannels * (bitsPerSample / 8))).toFixed(2);
+        const totalTime = ((performance.now() - generationStartTime) / 1000).toFixed(3);
+        const rtf = (totalTime / audioDuration).toFixed(3);
+        showAudioPlayer(currentAudioUrl); updateProgress(100);
+        updateGenerationStatus('✅ 生成成功', 'success', `耗时: ${totalTime}s | 音频: ${audioDuration}s | RTF: ${rtf} | Seed: ${seed}`);
+        addLog(`✅ 生成完成 | 文件大小: ${(blob.size/1024).toFixed(1)} KB | RTF: ${rtf}`, 'success');
+    } catch (err) {
+        if (err.name !== 'AbortError') { updateGenerationStatus(`❌ ${diagnoseError(0, '', err.message)}`, 'error'); addLog(`❌ 异常: ${err.message}`, 'error'); }
+        else { updateGenerationStatus('⏹ 已取消', 'warning'); addLog('⏹ 用户取消了生成任务', 'warning'); }
+        updateProgress(0);
+    } finally {
+        const createBtn = document.getElementById('createBtn');
+        createBtn.disabled = false; createBtn.innerHTML = '<i class="fa-solid fa-download mr-1"></i> <span>成品创建</span>';
+        abortController = null; document.getElementById('progressLabel').textContent = '准备就绪'; resetStreamUI();
+    }
+}
+
+// ===== 流式播放 =====
+async function streamAndPlay() {
+    const btn = document.getElementById('playBtn'); const stopBtn = document.getElementById('stopBtn');
+    const validation = validateInput();
+    if (!validation.valid) { updateGenerationStatus(`❌ ${validation.message}`, 'error'); addLog(`❌ 验证失败: ${validation.message}`, 'error'); return; }
+
+    if (mainPlayer && !mainPlayer.paused) { mainPlayer.pause(); addLog('⏹ 暂停成品音频，优先执行实时播放', 'warning'); }
+    if (isStreaming && abortController) abortController.abort();
+
+    updateGenerationStatus('📋 正在提交任务...', 'processing');
+    const newSeed = Math.floor(Math.random() * (2**32)); document.getElementById('seed').value = newSeed; lastStreamSeed = newSeed; addLog(`🎲 生成随机种子: ${newSeed}`, 'seed');
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> <span>生成中...</span>';
+    stopBtn.disabled = false; stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    isStreaming = true; isStreamPaused = false; pauseBtn.innerHTML = '<i class="fa-solid fa-circle-pause mr-1"></i> <span>暂停播放</span>';
+    updateProgress(0);
+    
+    try {
+        const body = buildRequestBody(newSeed); body.response_format = 'pcm'; abortController = new AbortController();
+        generationStartTime = performance.now();
+        const res = await fetch(`${API_BASE_URL}/v1/audio/speech/stream`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: abortController.signal });
+        if (!res.ok) { 
+            const errorText = await res.text(); 
+            addLog(`❌ 后端详细错误: ${errorText}`, 'error');
+            updateGenerationStatus(`❌ ${diagnoseError(res.status, '', errorText)}`, 'error'); 
+            resetStreamUI(); 
+            return; 
+        }
+        const sampleRate = parseInt(res.headers.get('X-Sample-Rate') || '24000');
+        if (audioContext) await audioContext.close(); audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        nextStartTime = audioContext.currentTime + 0.1; audioChunks = []; streamReader = res.body.getReader();
+        btn.innerHTML = '<i class="fa-solid fa-wave-square mr-1"></i> <span>播放中...</span>';
+        let firstByteReceived = false, chunkCount = 0;
+        processStream(sampleRate, newSeed, () => {
+            if (!firstByteReceived) { firstByteReceived = true; const ttfb = ((performance.now() - generationStartTime) / 1000).toFixed(3); updateGenerationStatus('⚡ 首字节到达', 'processing', `TTFB: ${ttfb}s`); }
+            chunkCount++; 
+            if (!isStreamPaused) updateGenerationStatus('🔄 流式播放中...', 'processing', `Chunk #${chunkCount}`);
+        });
+    } catch (err) {
+        if (err.name !== 'AbortError') { updateGenerationStatus(`❌ ${diagnoseError(0, '', err.message)}`, 'error'); addLog(`❌ 流式异常: ${err.message}`, 'error'); }
+        else { addLog('⏹ 用户停止了流式播放', 'warning'); updateGenerationStatus('⏹ 已停止', 'warning'); }
+        resetStreamUI();
+    }
+}
+
+async function processStream(sampleRate, seed, onChunkReceived) {
+    try {
+        if (isStreamPaused) { await new Promise(resolve => { resumeStreamResolve = resolve; }); }
+        const { done, value } = await streamReader.read();
+        if (done) {
+            buildFinalWav(sampleRate);
+            const totalTime = ((performance.now() - generationStartTime) / 1000).toFixed(3);
+            const totalSamples = audioChunks.reduce((acc, c) => acc + c.length, 0);
+            const audioDuration = (totalSamples / sampleRate).toFixed(2);
+            const rtf = (totalTime / audioDuration).toFixed(3);
+            updateGenerationStatus('✅ 生成成功', 'success', `耗时: ${totalTime}s | 音频: ${audioDuration}s | RTF: ${rtf} | Seed: ${seed}`);
+            setTimeout(() => { if (audioContext) audioContext.close(); addLog(`✅ 流式播放完成`, 'success'); resetStreamUI(); }, 300);
+            return;
+        }
+        onChunkReceived();
+        const alignedLen = value.byteLength - (value.byteLength % 2); if (alignedLen === 0) { processStream(sampleRate, seed, onChunkReceived); return; }
+        const pcm16 = new Int16Array(value.buffer, value.byteOffset, alignedLen / 2); const pcm32 = new Float32Array(pcm16.length);
+        for (let i = 0; i < pcm16.length; i++) pcm32[i] = pcm16[i] / 32768.0; audioChunks.push(pcm32);
+        const buffer = audioContext.createBuffer(1, pcm32.length, sampleRate); buffer.getChannelData(0).set(pcm32);
+        const source = audioContext.createBufferSource(); source.buffer = buffer; source.connect(audioContext.destination);
+        const playTime = Math.max(nextStartTime, audioContext.currentTime); source.start(playTime); nextStartTime = playTime + buffer.duration;
+        updateProgress(Math.min(95, audioChunks.length * 2)); processStream(sampleRate, seed, onChunkReceived);
+    } catch (err) {
+        if (err.name === 'AbortError') { buildFinalWav(sampleRate); addLog('⏹ 流式传输已中止', 'warning'); updateGenerationStatus('⏹ 已中止', 'warning'); }
+        else { updateGenerationStatus('❌ 流处理错误', 'error'); addLog(`❌ 流处理错误: ${err.message}`, 'error'); }
+        resetStreamUI();
+    }
+}
+
+function buildFinalWav(sampleRate) {
+    if (!audioChunks.length) return;
+    const total = audioChunks.reduce((acc, c) => acc + c.length, 0); const pcm16All = new Int16Array(total); let offset = 0;
+    for (const chunk of audioChunks) { for (let i = 0; i < chunk.length; i++) { const s = Math.max(-1, Math.min(1, chunk[i])); pcm16All[offset + i] = s < 0 ? s * 0x8000 : s * 0x7FFF; } offset += chunk.length; }
+    const wavBlob = pcmToWav(new Uint8Array(pcm16All.buffer), sampleRate);
+    if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl); currentAudioUrl = URL.createObjectURL(wavBlob);
+    showAudioPlayer(currentAudioUrl); updateProgress(100);
+}
+
+// ===== 播放器控制 =====
+function showAudioPlayer(url) { mainPlayer.src = url; playerContainer.classList.remove('hidden'); pauseBtn.innerHTML = '<i class="fa-solid fa-circle-play mr-1"></i> <span>播放/暂停</span>'; }
+function togglePlayPause() {
+    if (isStreaming) {
+        if (!audioContext) return;
+        if (audioContext.state === 'running') {
+            isStreamPaused = true; audioContext.suspend();
+            pauseBtn.innerHTML = '<i class="fa-solid fa-circle-play mr-1"></i> <span>继续播放</span>';
+            document.getElementById('progressLabel').textContent = '已暂停';
+            updateGenerationStatus('⏸️ 已暂停', 'warning');
+        } else if (audioContext.state === 'suspended') {
+            isStreamPaused = false; audioContext.resume();
+            if (resumeStreamResolve) { resumeStreamResolve(); resumeStreamResolve = null; }
+            pauseBtn.innerHTML = '<i class="fa-solid fa-circle-pause mr-1"></i> <span>暂停播放</span>';
+            document.getElementById('progressLabel').textContent = '播放中...';
+            updateGenerationStatus('🎵 实时播放中...', 'processing');
+        }
+    } else {
+        if (!mainPlayer.src) { updateGenerationStatus('⚠️ 请先生成音频', 'warning'); return; }
+        if (mainPlayer.paused) mainPlayer.play(); else mainPlayer.pause();
+    }
+}
+
+mainPlayer.addEventListener('play', () => { if (!isStreaming) { pauseBtn.innerHTML = '<i class="fa-solid fa-circle-pause mr-1"></i> <span>暂停播放</span>'; document.getElementById('progressLabel').textContent = '播放中...'; updateGenerationStatus('🎵 正在播放成品音频', 'success'); } });
+mainPlayer.addEventListener('pause', () => { if (!isStreaming) { pauseBtn.innerHTML = '<i class="fa-solid fa-circle-play mr-1"></i> <span>播放/暂停</span>'; document.getElementById('progressLabel').textContent = '已暂停'; updateGenerationStatus('⏸️ 已暂停', 'warning'); } });
+mainPlayer.addEventListener('ended', () => { if (!isStreaming) { pauseBtn.innerHTML = '<i class="fa-solid fa-circle-play mr-1"></i> <span>播放/暂停</span>'; document.getElementById('progressLabel').textContent = '准备就绪'; updateProgress(0); updateGenerationStatus('✅ 播放完毕', 'success'); } });
+
+// ===== 工具函数 =====
+function pcmToWav(pcmData, sampleRate) {
+    const buffer = new ArrayBuffer(44 + pcmData.length); const view = new DataView(buffer);
+    const w = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+    w(0,'RIFF'); view.setUint32(4,36+pcmData.length,true); w(8,'WAVE'); w(12,'fmt '); view.setUint32(16,16,true); view.setUint16(20,1,true); view.setUint16(22,1,true); view.setUint32(24,sampleRate,true); view.setUint32(28,sampleRate*2,true); view.setUint16(32,2,true); view.setUint16(34,16,true); w(36,'data'); view.setUint32(40,pcmData.length,true);
+    new Uint8Array(buffer,44).set(pcmData); return new Blob([buffer],{type:'audio/wav'});
+}
+function updateProgress(p) { document.getElementById('progressBar').style.width = p+'%'; document.getElementById('progressPercent').textContent = Math.round(p)+'%'; }
+function resetStreamUI() {
+    isStreaming = false; isStreamPaused = false; resumeStreamResolve = null;
+    document.getElementById('playBtn').disabled = false; document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-bolt mr-1"></i> <span>实时播放</span>';
+    document.getElementById('createBtn').disabled = false; document.getElementById('createBtn').innerHTML = '<i class="fa-solid fa-download mr-1"></i> <span>成品创建</span>';
+    document.getElementById('stopBtn').disabled = true; document.getElementById('stopBtn').classList.add('opacity-50', 'cursor-not-allowed');
+    pauseBtn.innerHTML = '<i class="fa-solid fa-circle-play mr-1"></i> <span>播放/暂停</span>';
+}
+function toggleAdvanced() { const c = document.getElementById('advancedContent'); const i = document.getElementById('advancedIcon'); c.classList.toggle('hidden'); i.style.transform = c.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)'; }
+
+// ===== 事件绑定 =====
+document.getElementById('playBtn').addEventListener('click', streamAndPlay);
+document.getElementById('createBtn').addEventListener('click', generateAudio);
+pauseBtn.addEventListener('click', togglePlayPause);
+document.getElementById('stopBtn').addEventListener('click', async () => {
+    isStreamPaused = false; if (resumeStreamResolve) { resumeStreamResolve(); resumeStreamResolve = null; }
+    if (abortController) abortController.abort(); if (streamReader) streamReader.cancel().catch(() => {});
+    try { await fetch(`${API_BASE_URL}/v1/audio/speech/cancel`, { method: 'POST' }); } catch(e) {}
+    if (audioContext) audioContext.close();
+    updateGenerationStatus('⏹ 已停止', 'warning'); updateProgress(0); addLog('⏹ 生成任务已停止', 'warning'); resetStreamUI();
+});
+
+// 页面初始化
+document.addEventListener('DOMContentLoaded', () => { selectMode(currentMode); });
+window.addEventListener('load', () => {
+    addLog('🌐 前端已加载，正在检查代理服务器连接...', 'info'); updateGenerationStatus('🌐 正在检查连接...', 'idle');
+    fetch(`${API_BASE_URL}/health`).then(res => { if (res.ok) { addLog('✅ 代理服务器连接成功 (localhost:8001)', 'success'); updateGenerationStatus('✅ 已连接，准备就绪', 'success'); return res.json(); } else throw new Error(`HTTP ${res.status}`); })
+    .then(data => { if (data) addLog(`📊 状态: ${data.status} | ASR: ${data.asr_available ? '✅' : ''}`, 'info'); })
+    .catch(() => { addLog('❌ 无法连接到代理服务器，请确认 proxy_server.py 已启动', 'error'); updateGenerationStatus('❌ 无法连接到代理', 'error'); });
+});
+</script>
+</body>
+</html>

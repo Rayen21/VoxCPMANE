@@ -1,0 +1,42 @@
+# ============================================
+# VoxCPMANE 安装依赖 — M1 Max 专用
+#
+# 背景：原作者 0.1.3b1 之前的版本对 M1 Max 推理有 bug
+#       这个 beta 版（0.1.3b1）专门修了这个 ANE/CoreML 路径
+#
+# 用法：
+#   conda activate voxcpmane
+#   conda install -y -c conda-forge "python>=3.10,<3.13" numpy=2.4 scipy=1.17
+#   pip install --prerelease allow -U -r requirements_m1max.txt
+#
+# 关键：voxcpmane2 必须装到 0.1.3b1，--prerelease allow 必带
+# ============================================
+
+# === M1 Max 专用：原作者为这型号出的 beta 版 ===
+voxcpmane2==0.1.3b1
+
+# === 系统级科学计算（建议从 conda-forge 装；这行只是兜底） ===
+numpy==2.4.6
+scipy==1.17.1
+
+# === PyTorch（CPU build，CoreML 跑在 ANE） ===
+torch==2.12.1
+torchaudio==2.11.0
+torch-complex==0.4.4
+
+# === CoreML 工具链 ===
+coremltools==9.0
+
+# === Hugging Face / ModelScope / FunASR ===
+huggingface_hub==1.19.0
+modelscope==1.37.1
+funasr==1.3.11
+
+# === Web framework（后端 + 代理） ===
+fastapi==0.137.0
+uvicorn==0.49.0
+httpx==0.28.1
+
+# === 音频 I/O ===
+soundfile==0.14.0
+librosa==0.11.0
