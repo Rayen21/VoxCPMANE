@@ -57,4 +57,4 @@ echo "============================================"
 # 自动打开前端（走代理，地址栏显示 http://127.0.0.1:8001/ 而不是 file://）
 sleep 1  # 等代理完全就绪
 open "http://127.0.0.1:8001/" 2>/dev/null || echo "[warn] failed to open browser"
-python proxy_server.py
+python ~/miniforge3/envs/voxcpmane/lib/python3.11/site-packages/voxcpmane/frontend/proxy_server.py
