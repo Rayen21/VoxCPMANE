@@ -3,7 +3,7 @@
 > 适用：macOS（Apple Silicon，M1/M2/M3/M4），使用 Conda 管理 Python 环境  
 > 目标：在本地跑起 `VoxCPM2 TTS`（CoreML / Apple Neural Engine 加速）
 
-修改原作者的前端页面并且加入ASR的音频自动转写
+# 修改原作者的前端页面并且加入ASR的音频自动转写
 
 <img width="1175" height="694" alt="image" src="https://github.com/user-attachments/assets/aad01b37-cdad-4e4c-944e-9a2b7723f471" />
 <img width="1180" height="762" alt="image" src="https://github.com/user-attachments/assets/052a8526-e7ac-4856-8c9a-958530732caa" />
