@@ -4,6 +4,8 @@
 <img width="1180" height="762" alt="image" src="https://github.com/user-attachments/assets/052a8526-e7ac-4856-8c9a-958530732caa" />
 <img width="1186" height="773" alt="image" src="https://github.com/user-attachments/assets/1946f9ae-f053-42ed-b7c9-57c71b7c83a4" />
 
+## 安装指南和说明看这里：
+https://github.com/Rayen21/VoxCPMANE/tree/voxcpmane2/src/voxcpmane/frontend
 # 以下为原作者内容：
 
 # VoxCPMANE2
